@@ -6,19 +6,14 @@
 UnitXP_SP3_Addon = nil; -- It's a SavedVariable, not local
 UnitXP_SP3_Icon = nil; -- It's a SavedVariable, not local
 
--- Commands
-SLASH_UNITXP1 = "/unitxp";
-SlashCmdList["UNITXP"] = function()
-    if xpsp3Frame:IsShown() then
-        PlaySound("igMainMenuContinue");
-        xpsp3Frame:Hide();
-    else
-        PlaySound("igMainMenuOpen");
-        xpsp3Frame:Show();
+local function UnitXP_SP3_Print(msg)
+    if not DEFAULT_CHAT_FRAME then
+        return;
     end
+    DEFAULT_CHAT_FRAME:AddMessage(tostring(msg));
 end
 
--- Strings
+-- Bindings
 BINDING_HEADER_UNITXPSP3TARGETING = "UnitXP SP3 Targeting Functions";
 BINDING_NAME_UNITXPSP3NEARESTENEMY = "Nearest Enemy";
 BINDING_NAME_UNITXPSP3TARGETMOSTHP = "The enemy with most HP";
@@ -38,17 +33,13 @@ BINDING_NAME_UNITXPSP3RESETCAMERA = "Reset Camera";
 BINDING_NAME_UNITXPSP3TOGGLEMODERNNAMEPLATEDISTANCE = "Toggle Proper Nameplates Behavior";
 BINDING_NAME_UNITXPSP3TOGGLEPRIORITIZETARGETNAMEPLATE = "Toggle Prioritize Target Nameplate";
 BINDING_NAME_UNITXPSP3TOGGLEPRIORITIZEMARKEDNAMEPLATE = "Toggle Prioritize Marked Nameplate";
-local UNITXPSP3TOOLTIP = "UnitXP SP3 is running"
+
+local UNITXPSP3TOOLTIP = "UnitXP SP3 is running";
 
 local libIcon = LibStub("LibDBIcon-1.0");
 local libData = LibStub("LibDataBroker-1.1");
-
-local function UnitXP_SP3_Print(msg)
-    if not DEFAULT_CHAT_FRAME then
-        return;
-    end
-    DEFAULT_CHAT_FRAME:AddMessage(tostring(msg));
-end
+local skipUpdateMessage = false;
+local original_CombatText_AddMessage = nil;
 
 function UnitXP_SP3_OnLoad()
     xpsp3Frame:RegisterEvent("ADDON_LOADED");
@@ -58,8 +49,11 @@ local function UnitXP_SP3_flashTaskbarIcon()
     local test, result = pcall(UnitXP, "notify", "taskbarIcon");
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"notify taskbarIcon\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"notify taskbarIcon\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return nil;
     end
 
@@ -70,8 +64,11 @@ local function UnitXP_SP3_playSystemDefaultSound()
     local test, result = pcall(UnitXP, "notify", "systemSound", "SystemDefault");
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"notify systemSound\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"notify systemSound\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return nil;
     end
 
@@ -82,8 +79,11 @@ local function UnitXP_SP3_FPScap(cap)
     local test, result = pcall(UnitXP, "FPScap", cap);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"FPScap\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"FPScap\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return UnitXP_SP3_Addon["FPScap"];
     end
 
@@ -91,12 +91,31 @@ local function UnitXP_SP3_FPScap(cap)
     return UnitXP_SP3_Addon["FPScap"];
 end
 
+local function UnitXP_SP3_backgroundFPScap(cap)
+    local test, result = pcall(UnitXP, "backgroundFPScap", cap);
+
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"backgroundFPScap\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return UnitXP_SP3_Addon["backgroundFPScap"];
+    end
+
+    UnitXP_SP3_Addon["backgroundFPScap"] = result;
+    return UnitXP_SP3_Addon["backgroundFPScap"];
+end
+
 local function UnitXP_SP3_setTargetingRangeConeFactor(factor)
     local test, result = pcall(UnitXP, "target", "rangeCone", factor);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"target rangeCone\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"target rangeCone\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return UnitXP_SP3_Addon["targetingRangeConeFactor"];
     end
 
@@ -108,19 +127,191 @@ local function UnitXP_SP3_setModernNameplateDistance(enable)
     local test, result = pcall(UnitXP, "modernNameplateDistance", enable);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"modernNameplateDistance\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"modernNameplateDistance\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return false;
     end
     return result;
+end
+
+local function UnitXP_SP3_setHideEXPtext(enable)
+    local test, result = pcall(UnitXP, "hideEXPtext", enable);
+
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"hideEXPtext\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return false;
+    end
+    return result;
+end
+
+function UnitXP_SP3_detoured_CombatText_AddMessage(message, scrollFunction, r, g, b, displayType, isStaggered)
+    if UnitXP_SP3_Addon["combatTextSP3"] then
+        -- Reported by Heallios
+        -- Super WoW/API is also hooking CombatText_AddMessage to process the message doing a GUID to name conversion.
+        -- However as UnitXP_SP3 would not call underlying function when using its own combat text facility, this conversion would be skipped.
+        -- For now, we copy pasTA Super WoW/API conversion code.
+        if SUPERWOW_VERSION then
+            message = gsub(message, "(%s%[)(0x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x)(%])", function(bracket1, hex, bracket2)
+                if UnitIsUnit(hex, "player") then
+                    return nil;
+                else
+                    return " [" .. UnitName(hex) .. "]";
+                end
+            end);
+        end
+
+        if displayType == "crit" then
+            pcall(UnitXP, "addCombatText", "crit", message, r, g, b);
+        else
+            if COMBAT_TEXT_FLOAT_MODE == "1" then
+                pcall(UnitXP, "addCombatText", "normal", message, r, g, b);
+            elseif COMBAT_TEXT_FLOAT_MODE == "2" then
+                pcall(UnitXP, "addCombatText", "downward", message, r, g, b);
+            else
+                pcall(UnitXP, "addCombatText", "arc", message, r, g, b);
+            end
+        end
+        return nil;
+    else
+        if original_CombatText_AddMessage ~= nil then
+            return original_CombatText_AddMessage(message, scrollFunction, r, g, b, displayType, isStaggered);
+        end
+    end
+end
+
+local function UnitXP_SP3_combatTextSP3_debugText()
+    local test, result, scene_isEnabled = pcall(UnitXP, "combatTextSP3", "debugText");
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"combatTextSP3 debugText\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return false;
+    end
+
+    UnitXP_SP3_Print("UnitXP_SP3 floating combat text debug: " .. result);
+end
+
+local function UnitXP_SP3_combatTextSP3(enable)
+    local test, result, scene_isEnabled = pcall(UnitXP, "combatTextSP3", enable);
+
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"combatTextSP3\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return false;
+    end
+
+    if type(result) ~= "boolean" then
+        result = false;
+        UnitXP_SP3_Print(
+            "UnitXP_SP3.dll failed to execute \"combatTextSP3\". You might need to update UnitXP_SP3.dll to support this method.");
+    end
+
+    if type(scene_isEnabled) == "boolean" and scene_isEnabled == false then
+        UnitXP_SP3_combatTextSP3_debugText();
+    end
+
+    return result;
+end
+
+local function UnitXP_SP3_combatTextSP3_fontSize(size)
+    local test, result, scene_isEnabled = pcall(UnitXP, "combatTextSP3", "setFontSize", size);
+
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"combatTextSP3 setFontSize\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return UnitXP_SP3_Addon["combatTextSP3_fontSize"];
+    end
+
+    if type(result) ~= "number" then
+        result = 40;
+        UnitXP_SP3_Print(
+            "UnitXP_SP3.dll failed to execute \"combatTextSP3 setFontSize\". You might need to update UnitXP_SP3.dll to support this method.");
+    end
+
+    if type(scene_isEnabled) == "boolean" and scene_isEnabled == false then
+        UnitXP_SP3_combatTextSP3_debugText();
+    end
+
+    UnitXP_SP3_Addon["combatTextSP3_fontSize"] = result;
+    return UnitXP_SP3_Addon["combatTextSP3_fontSize"];
+end
+
+local function UnitXP_SP3_combatTextSP3_fontName(name)
+    local test, result, scene_isEnabled = pcall(UnitXP, "combatTextSP3", "setFontName", name);
+
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"combatTextSP3 setFontName\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return UnitXP_SP3_Addon["combatTextSP3_fontName"];
+    end
+
+    if type(result) ~= "string" then
+        result = "Cambria";
+        UnitXP_SP3_Print(
+            "UnitXP_SP3.dll failed to execute \"combatTextSP3 setFontName\". You might need to update UnitXP_SP3.dll to support this method.");
+    end
+
+    if type(scene_isEnabled) == "boolean" and scene_isEnabled == false then
+        UnitXP_SP3_combatTextSP3_debugText();
+    end
+
+    UnitXP_SP3_Addon["combatTextSP3_fontName"] = result;
+    return UnitXP_SP3_Addon["combatTextSP3_fontName"];
+end
+
+local function UnitXP_SP3_combatTextSP3_nameplateHeight(size)
+    local test, result, scene_isEnabled = pcall(UnitXP, "combatTextSP3", "setNameplateHeight", size);
+
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"combatTextSP3 setNameplateHeight\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return UnitXP_SP3_Addon["combatTextSP3_nameplateHeight"];
+    end
+
+    if type(result) ~= "number" then
+        result = 55;
+        UnitXP_SP3_Print(
+            "UnitXP_SP3.dll failed to execute \"combatTextSP3 setNameplateHeight\". You might need to update UnitXP_SP3.dll to support this method.");
+    end
+
+    if type(scene_isEnabled) == "boolean" and scene_isEnabled == false then
+        UnitXP_SP3_combatTextSP3_debugText();
+    end
+
+    UnitXP_SP3_Addon["combatTextSP3_nameplateHeight"] = result;
+    return UnitXP_SP3_Addon["combatTextSP3_nameplateHeight"];
 end
 
 local function UnitXP_SP3_setPrioritizeTargetNameplate(enable)
     local test, result = pcall(UnitXP, "prioritizeTargetNameplate", enable);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"prioritizeTargetNameplate\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"prioritizeTargetNameplate\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return false;
     end
     return result;
@@ -130,8 +321,11 @@ local function UnitXP_SP3_setPrioritizeMarkedNameplate(enable)
     local test, result = pcall(UnitXP, "prioritizeMarkedNameplate", enable);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"prioritizeMarkedNameplate\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"prioritizeMarkedNameplate\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return false;
     end
     return result;
@@ -141,8 +335,25 @@ local function UnitXP_SP3_setNameplateCombatFilter(enable)
     local test, result = pcall(UnitXP, "nameplateCombatFilter", enable);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"nameplateCombatFilter\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"nameplateCombatFilter\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return false;
+    end
+    return result;
+end
+
+local function UnitXP_SP3_setHideCritterNameplate(enable)
+    local test, result = pcall(UnitXP, "hideCritterNameplate", enable);
+
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"hideCritterNameplate\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return false;
     end
     return result;
@@ -152,19 +363,45 @@ local function UnitXP_SP3_setShowInCombatNameplatesNearPlayer(enable)
     local test, result = pcall(UnitXP, "showInCombatNameplatesNearPlayer", enable);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"showInCombatNameplatesNearPlayer\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"showInCombatNameplatesNearPlayer\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return false;
     end
     return result;
 end
 
 local function UnitXP_SP3_setWeatherAlwaysClear(enable)
-    local test, result = pcall(UnitXP, "weatherAlwaysClear", enable);
+    local subcmd;
+    if enable == "enable" then
+        subcmd = "disableRain";
+    else
+        subcmd = "enableRain";
+    end
+    local test, result = pcall(UnitXP, "weatherAlwaysClear", subcmd);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"weatherAlwaysClear\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"weatherAlwaysClear\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
+        return false;
+    end
+    return result;
+end
+
+local function UnitXP_SP3_screenshotQuality(perfect)
+    local test, result = pcall(UnitXP, "screenshot", perfect);
+
+    if not test then
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"screenshot\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return false;
     end
     return result;
@@ -174,8 +411,11 @@ local function UnitXP_SP3_setCameraPinHeight(enable)
     local test, result = pcall(UnitXP, "cameraPinHeight", enable);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"cameraPinHeight\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"cameraPinHeight\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return false;
     end
     return result;
@@ -185,8 +425,11 @@ local function UnitXP_SP3_setCameraHeight(value)
     local test, result = pcall(UnitXP, "cameraVerticalDisplacement", "set", value);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"cameraVerticalDisplacement set\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"cameraVerticalDisplacement set\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return UnitXP_SP3_Addon["cameraHeight"];
     end
 
@@ -198,8 +441,11 @@ local function UnitXP_SP3_setCameraPitch(value)
     local test, result = pcall(UnitXP, "cameraPitch", "set", value);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"cameraPitch set\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"cameraPitch set\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return UnitXP_SP3_Addon["cameraPitch"];
     end
 
@@ -211,8 +457,11 @@ local function UnitXP_SP3_setCameraHorizontalDisplacement(value)
     local test, result = pcall(UnitXP, "cameraHorizontalDisplacement", "set", value);
 
     if not test then
-        UnitXP_SP3_Print(
-            "UnitXP_SP3.dll failed to execute \"cameraHorizontalDisplacement set\". You might need to update UnitXP_SP3.dll to support this method.");
+        if not skipUpdateMessage then
+            skipUpdateMessage = true;
+            UnitXP_SP3_Print(
+                "UnitXP_SP3.dll failed to execute \"cameraHorizontalDisplacement set\". You might need to update UnitXP_SP3.dll to support this method.");
+        end
         return UnitXP_SP3_Addon["cameraHorizontalDisplacement"];
     end
 
@@ -255,6 +504,9 @@ local function UnitXP_SP3_reloadConfig()
     UnitXP_SP3_FPScap(UnitXP_SP3_Addon["FPScap"]);
     xpsp3_editBox_FPScap:SetNumber(UnitXP_SP3_Addon["FPScap"]);
 
+    UnitXP_SP3_backgroundFPScap(UnitXP_SP3_Addon["backgroundFPScap"]);
+    xpsp3_editBox_backgroundFPScap:SetNumber(UnitXP_SP3_Addon["backgroundFPScap"]);
+
     UnitXP_SP3_setTargetingRangeConeFactor(UnitXP_SP3_Addon["targetingRangeConeFactor"]);
 
     UnitXP_SP3_setCameraHeight(UnitXP_SP3_Addon["cameraHeight"]);
@@ -273,6 +525,43 @@ local function UnitXP_SP3_reloadConfig()
     else
         UnitXP_SP3_setModernNameplateDistance("disable");
         xpsp3_checkButton_modernNameplate:SetChecked(false);
+    end
+
+    if UnitXP_SP3_Addon["combatTextSP3"] then
+        UnitXP_SP3_combatTextSP3("enable");
+        xpsp3_checkButton_combatTextSP3:SetChecked(true);
+        xpsp3_editBox_combatTextSP3_fontSize:Show();
+        xpsp3_editBox_combatTextSP3_nameplateHeight:Show();
+        xpsp3_editBox_combatTextSP3_fontName:Show();
+        xpsp3_fontString_combatTextSP3_fontSize:Show();
+        xpsp3_fontString_combatTextSP3_nameplateHeight:Show();
+        xpsp3_fontString_combatTextSP3_fontName:Show();
+
+        UnitXP_SP3_combatTextSP3_fontSize(UnitXP_SP3_Addon["combatTextSP3_fontSize"]);
+        xpsp3_editBox_combatTextSP3_fontSize:SetNumber(UnitXP_SP3_Addon["combatTextSP3_fontSize"]);
+
+        UnitXP_SP3_combatTextSP3_nameplateHeight(UnitXP_SP3_Addon["combatTextSP3_nameplateHeight"]);
+        xpsp3_editBox_combatTextSP3_nameplateHeight:SetNumber(UnitXP_SP3_Addon["combatTextSP3_nameplateHeight"]);
+
+        UnitXP_SP3_combatTextSP3_fontName(UnitXP_SP3_Addon["combatTextSP3_fontName"]);
+        xpsp3_editBox_combatTextSP3_fontName:SetText(UnitXP_SP3_Addon["combatTextSP3_fontName"]);
+    else
+        UnitXP_SP3_combatTextSP3("disable");
+        xpsp3_checkButton_combatTextSP3:SetChecked(false);
+        xpsp3_editBox_combatTextSP3_fontSize:Hide();
+        xpsp3_editBox_combatTextSP3_nameplateHeight:Hide();
+        xpsp3_editBox_combatTextSP3_fontName:Hide();
+        xpsp3_fontString_combatTextSP3_fontSize:Hide();
+        xpsp3_fontString_combatTextSP3_nameplateHeight:Hide();
+        xpsp3_fontString_combatTextSP3_fontName:Hide();
+    end
+
+    if UnitXP_SP3_Addon["hideEXPtext"] then
+        UnitXP_SP3_setHideEXPtext("enable");
+        xpsp3_checkButton_hideEXPtext:SetChecked(true);
+    else
+        UnitXP_SP3_setHideEXPtext("disable");
+        xpsp3_checkButton_hideEXPtext:SetChecked(false);
     end
 
     if UnitXP_SP3_Addon["cameraPinHeight"] then
@@ -307,6 +596,14 @@ local function UnitXP_SP3_reloadConfig()
         xpsp3_checkButton_nameplateCombatFilter:SetChecked(false);
     end
 
+    if UnitXP_SP3_Addon["hideCritterNameplate"] then
+        UnitXP_SP3_setHideCritterNameplate("enable");
+        xpsp3_checkButton_hideCritterNameplate:SetChecked(true);
+    else
+        UnitXP_SP3_setHideCritterNameplate("disable");
+        xpsp3_checkButton_hideCritterNameplate:SetChecked(false);
+    end
+
     if UnitXP_SP3_Addon["showInCombatNameplatesNearPlayer"] then
         UnitXP_SP3_setShowInCombatNameplatesNearPlayer("enable");
         xpsp3_checkButton_showInCombatNameplatesNearPlayer:SetChecked(true);
@@ -321,6 +618,14 @@ local function UnitXP_SP3_reloadConfig()
     else
         UnitXP_SP3_setWeatherAlwaysClear("disable");
         xpsp3_checkButton_weatherAlwaysClear:SetChecked(false);
+    end
+
+    if UnitXP_SP3_Addon["perfectScreenshot"] then
+        UnitXP_SP3_screenshotQuality("perfect");
+        xpsp3_checkButton_perfectScreenshot:SetChecked(true);
+    else
+        UnitXP_SP3_screenshotQuality("good");
+        xpsp3_checkButton_perfectScreenshot:SetChecked(false);
     end
 
     for ev, v in pairs(UnitXP_SP3_Addon["notify_flashTaskbarIcon"]) do
@@ -355,11 +660,29 @@ function UnitXP_SP3_UI_OnClick(widget)
     end
 
     xpsp3_editBox_FPScap:ClearFocus();
+    xpsp3_editBox_backgroundFPScap:ClearFocus();
+    xpsp3_editBox_combatTextSP3_fontSize:ClearFocus();
+    xpsp3_editBox_combatTextSP3_nameplateHeight:ClearFocus();
+    xpsp3_editBox_combatTextSP3_fontName:ClearFocus();
+
+    skipUpdateMessage = false;
 
     if string.find(widget:GetName(), "_editBox_") then
         PlaySound("igMainMenuContinue");
         if string.find(widget:GetName(), "_FPScap") then
             UnitXP_SP3_FPScap(widget:GetNumber());
+        end
+        if string.find(widget:GetName(), "_backgroundFPScap") then
+            UnitXP_SP3_backgroundFPScap(widget:GetNumber());
+        end
+        if string.find(widget:GetName(), "_combatTextSP3_fontSize") then
+            UnitXP_SP3_combatTextSP3_fontSize(widget:GetNumber());
+        end
+        if string.find(widget:GetName(), "_combatTextSP3_nameplateHeight") then
+            UnitXP_SP3_combatTextSP3_nameplateHeight(widget:GetNumber());
+        end
+        if string.find(widget:GetName(), "_combatTextSP3_fontName") then
+            UnitXP_SP3_combatTextSP3_fontName(widget:GetText());
         end
     end
 
@@ -415,6 +738,22 @@ function UnitXP_SP3_UI_OnClick(widget)
             end
         end
 
+        if string.find(widget:GetName(), "_combatTextSP3") then
+            if widget:GetChecked() then
+                UnitXP_SP3_Addon["combatTextSP3"] = true;
+            else
+                UnitXP_SP3_Addon["combatTextSP3"] = false;
+            end
+        end
+
+        if string.find(widget:GetName(), "_hideEXPtext") then
+            if widget:GetChecked() then
+                UnitXP_SP3_Addon["hideEXPtext"] = true;
+            else
+                UnitXP_SP3_Addon["hideEXPtext"] = false;
+            end
+        end
+
         if string.find(widget:GetName(), "_cameraPinHeight") then
             if widget:GetChecked() then
                 UnitXP_SP3_Addon["cameraPinHeight"] = true;
@@ -455,11 +794,27 @@ function UnitXP_SP3_UI_OnClick(widget)
             end
         end
 
+        if string.find(widget:GetName(), "_perfectScreenshot") then
+            if widget:GetChecked() then
+                UnitXP_SP3_Addon["perfectScreenshot"] = true;
+            else
+                UnitXP_SP3_Addon["perfectScreenshot"] = false;
+            end
+        end
+
         if string.find(widget:GetName(), "_showInCombatNameplatesNearPlayer") then
             if widget:GetChecked() then
                 UnitXP_SP3_Addon["showInCombatNameplatesNearPlayer"] = true;
             else
                 UnitXP_SP3_Addon["showInCombatNameplatesNearPlayer"] = false;
+            end
+        end
+
+        if string.find(widget:GetName(), "_hideCritterNameplate") then
+            if widget:GetChecked() then
+                UnitXP_SP3_Addon["hideCritterNameplate"] = true;
+            else
+                UnitXP_SP3_Addon["hideCritterNameplate"] = false;
             end
         end
 
@@ -522,7 +877,7 @@ local function checkEvent(listenedEvents, actionFunction)
                 end
             end
         elseif event == "CHAT_MSG_ADDON" then
-            if LFT_ADDON_PREFIX ~= nil and arg1 == LFT_ADDON_PREFIX then
+            if arg1 == (LFT_ADDON_PREFIX or "TW_LFG") then
                 if string.find(arg2, "S2C_OFFER_NEW") or string.find(arg2, "S2C_ROLECHECK_START") or
                     string.find(arg2, "S2C_QUEUE_LEFT") then
                     -- LFT found group or role check start or somehow player left queue
@@ -537,7 +892,7 @@ end
 
 function UnitXP_SP3_OnEvent(event)
     if event == "ADDON_LOADED" and arg1 == "UnitXP_SP3_Addon" then
-        local dataVersion = 25;
+        local dataVersion = 34;
         if UnitXP_SP3_Addon == nil or UnitXP_SP3_Addon["dataVersion"] ~= dataVersion then
             UnitXP_SP3_Addon = {};
             UnitXP_SP3_Addon["dataVersion"] = dataVersion;
@@ -552,7 +907,15 @@ function UnitXP_SP3_OnEvent(event)
             UnitXP_SP3_Addon["nameplateCombatFilter"] = false;
             UnitXP_SP3_Addon["showInCombatNameplatesNearPlayer"] = false;
             UnitXP_SP3_Addon["FPScap"] = 0;
+            UnitXP_SP3_Addon["backgroundFPScap"] = 60;
             UnitXP_SP3_Addon["weatherAlwaysClear"] = false;
+            UnitXP_SP3_Addon["hideCritterNameplate"] = true;
+            UnitXP_SP3_Addon["combatTextSP3"] = false;
+            UnitXP_SP3_Addon["combatTextSP3_fontSize"] = 40;
+            UnitXP_SP3_Addon["combatTextSP3_nameplateHeight"] = 55;
+            UnitXP_SP3_Addon["combatTextSP3_fontName"] = "Cambria";
+            UnitXP_SP3_Addon["hideEXPtext"] = false;
+            UnitXP_SP3_Addon["perfectScreenshot"] = false;
 
             UnitXP_SP3_Addon["notify_flashTaskbarIcon"] = {};
             UnitXP_SP3_Addon["notify_flashTaskbarIcon"]["PLAYER_REGEN_DISABLED"] = true;
@@ -577,8 +940,6 @@ function UnitXP_SP3_OnEvent(event)
             UnitXP_SP3_Addon["notify_playSystemDefaultSound"]["UPDATE_BATTLEFIELD_STATUS"] = false;
             UnitXP_SP3_Addon["notify_playSystemDefaultSound"]["PARTY_MEMBERS_CHANGED"] = false;
             UnitXP_SP3_Addon["notify_playSystemDefaultSound"]["CHAT_MSG_ADDON"] = false; -- For LFT
-
-            UnitXP_SP3_Print("UnitXP Service Pack 3 configuration is reset due to AddOn update.")
         end
         if UnitXP_SP3_Icon == nil then
             UnitXP_SP3_Icon = {
@@ -593,6 +954,8 @@ function UnitXP_SP3_OnEvent(event)
             UnitXP_SP3_reloadConfig();
             xpsp3Frame:RegisterEvent("PLAYER_ENTERING_WORLD");
             xpsp3Frame:RegisterEvent("PLAYER_LEAVING_WORLD");
+            original_CombatText_AddMessage = CombatText_AddMessage;
+            CombatText_AddMessage = UnitXP_SP3_detoured_CombatText_AddMessage;
 
             local message = "UnitXP Service Pack 3 is loaded.";
             local hasCOFFtimestamp, coffTimestamp = pcall(UnitXP, "version", "coffTimeDateStamp");
@@ -603,6 +966,22 @@ function UnitXP_SP3_OnEvent(event)
         else
             UnitXP_SP3_Print("UnitXP Service Pack 3 didn't load properly.");
             return;
+        end
+
+        -- Chat Command
+        SLASH_UNITXP1 = "/unitxp";
+        SlashCmdList["UNITXP"] = function()
+            if pcall(UnitXP, "nop", "nop") == true then
+                if xpsp3Frame:IsShown() then
+                    PlaySound("igMainMenuContinue");
+                    xpsp3Frame:Hide();
+                else
+                    PlaySound("igMainMenuOpen");
+                    xpsp3Frame:Show();
+                end
+            else
+                UnitXP_SP3_Print("UnitXP Service Pack 3 didn't load properly.");
+            end
         end
 
         if UnitXP_SP3_Addon["notify_flashTaskbarIcon"] ~= nil and
@@ -619,13 +998,16 @@ function UnitXP_SP3_OnEvent(event)
 
         local iconData = libData:NewDataObject("UnitXP SP3 icon data", {
             OnClick = function()
-
-                if xpsp3Frame:IsShown() then
-                    PlaySound("igMainMenuContinue");
-                    xpsp3Frame:Hide();
+                if pcall(UnitXP, "nop", "nop") == true then
+                    if xpsp3Frame:IsShown() then
+                        PlaySound("igMainMenuContinue");
+                        xpsp3Frame:Hide();
+                    else
+                        PlaySound("igMainMenuOpen");
+                        xpsp3Frame:Show();
+                    end
                 else
-                    PlaySound("igMainMenuOpen");
-                    xpsp3Frame:Show();
+                    UnitXP_SP3_Print("UnitXP Service Pack 3 didn't load properly.");
                 end
             end,
             OnTooltipShow = function(tooltip)
@@ -638,21 +1020,10 @@ function UnitXP_SP3_OnEvent(event)
 
         return;
     elseif event == "PLAYER_ENTERING_WORLD" then
-        local test, result = pcall(UnitXP, "FPScap", UnitXP_SP3_Addon["FPScap"]);
-
-        if not test then
-            UnitXP_SP3_Print(
-                "UnitXP_SP3.dll failed to execute \"FPScap\". You might need to update UnitXP_SP3.dll to support this method.");
-        end
+        pcall(UnitXP, "onEvent", event);
         return;
     elseif event == "PLAYER_LEAVING_WORLD" then
-        -- Some user report a faster loading time when FPS cap turns off
-        local test, result = pcall(UnitXP, "FPScap", 0);
-
-        if not test then
-            UnitXP_SP3_Print(
-                "UnitXP_SP3.dll failed to execute \"FPScap\". You might need to update UnitXP_SP3.dll to support this method.");
-        end
+        pcall(UnitXP, "onEvent", event);
         return;
     end
 

@@ -55,7 +55,7 @@
 	<Binding name="UNITXPSP3RESETCAMERA">
 		UnitXP_SP3_resetCamera();
 	</Binding>
-
+	
 	<Binding name="UNITXPSP3TOGGLEMODERNNAMEPLATEDISTANCE">
 		UnitXP_SP3_toggleModernNameplateDistance();
 	</Binding>
