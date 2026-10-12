@@ -162,7 +162,8 @@ function UnitXP_SP3_detoured_CombatText_AddMessage(message, scrollFunction, r, g
                 if UnitIsUnit(hex, "player") then
                     return nil;
                 else
-                    return " [" .. UnitName(hex) .. "]";
+                    local name = UnitName(hex);
+                    if name then return " [" .. name .. "]"; end
                 end
             end);
         end
